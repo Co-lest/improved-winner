@@ -1,4 +1,3 @@
-import { exec } from "child_process";
 import os from "os";
 import http from "http";
 import "dotenv/config";
@@ -8,8 +7,11 @@ import { fileURLToPath } from "url";
 import { execExportWin, execRemoveWin } from "./Utils/win32.js";
 import { execExportMac, execRemoveMac} from "./Utils/mac.js"
 import { execExportLin, execRemoveLin } from "./Utils/linux.js";
+import { WebSocketServer } from "ws";
 
 const port = process.env.PORT;
+
+let programsObj;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,55 +37,47 @@ const server = http.createServer(async (req, res) => {
 
     res.writeHead(200, { 'Content-Type': contentType });
     res.end(fileData);
+    connectWebserver();
   } catch(err) {
     console.error(`An error ocurred when creating a server!`, err);
     return;
   }
 });
 
-(function compVars (){
-  const operatingSystem = os.platform();
-  const architecture = os.arch();
-  const release = os.release();
+const connectWebserver = () => {
+  const wss = new WebSocketServer( { server } );
 
-  console.log(operatingSystem, architecture, release);
+  wss.addListener("connection", (ws) => {
+    console.log(`A client connected`);
+    // compVars();
+    // ws.addEventListener("");
+  });
+}
 
-  let command;
-  let programName = "Microsoft Edge";
+const compVars = () => {
+  // const operatingSystem = os.platform();
+  // const architecture = os.arch();
+  // const release = os.release();
 
-  if (operatingSystem === 'win32') {
-    command = `wmic product where name='${programName}' call uninstall`;
-    execExportWin();
-    execRemoveWin(command, programName);
-  }else if (operatingSystem === "darwin") {
-      command = `osascript -e 'do shell script "sudo rm -rf /Applications/${programName}.app"' with administrator privileges`;
-      execExportMac();
-      execRemoveMac(command, programName);
-    } else if(operatingSystem === "linux") {
-      command = `sudo apt remove ${programName}; // Replace 'apt' with your package manager`;
-      execExportLin();
-      execRemoveLin(command, programName)
-    }
+  // console.log(operatingSystem, architecture, release);
 
+  // let command;
+  // let programName = "Microsoft Edge";
 
-
-  // if (operatingSystem === "win32") {
-  //   command = `wmic product where name='${programName}' call uninstall`
-  // } else if (operatingSystem === "darwin") {
-  //   command = `osascript -e 'do shell script "sudo rm -rf /Applications/${programName}.app"' with administrator privileges`
-  // } else if(operatingSystem === "linux") {
-  //   command = `sudo apt remove ${programName}; // Replace 'apt' with your package manager`
-  // }
-
-  // exec(command, (error, stdout, stderr) => {
-  //   if (error) {
-  //     console.error(`Failed to uninstall the program: ${programName}`);
-  //     return;
-  //   } else{
-  //     console.log(`Uninstalled program: ${programName}`);
+  // if (operatingSystem === 'win32') {
+  //   command = `wmic product where name='${programName}' call uninstall`;
+  //   programsObj = execExportWin();
+  //   execRemoveWin(command, programName);
+  // }else if (operatingSystem === "darwin") {
+  //     command = `osascript -e 'do shell script "sudo rm -rf /Applications/${programName}.app"' with administrator privileges`;
+  //     execExportMac();
+  //     execRemoveMac(command, programName);
+  //   } else if(operatingSystem === "linux") {
+  //     command = `sudo apt remove ${programName}`;
+  //     execExportLin();
+  //     execRemoveLin(command, programName)
   //   }
-  // });
-})();
+}
 
 
 server.listen(port, () => {
