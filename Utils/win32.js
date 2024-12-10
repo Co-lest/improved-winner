@@ -1,27 +1,25 @@
-import { exec } from "child_process";
+import { exec } from 'child_process';
 
-export function execExportWin() {
-  exec(
-    'powershell "Get-ItemProperty HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName"',
-    (error, stdout, stderr) => {
-      if (error) {
-        console.error(error.message);
-        return;
-      } else if (stderr) {
-        console.error(`stderr: ${stderr}`);
-        return;
-      } else if (stdout) {
-        let output = stdout.split("\r");
-        output.forEach((el) => {
-            if (el.trim() !== "\n") {
-                console.log(`Program: ${el.trim()}`);
-            }
-        });
-        // console.log(typeof output); // object
-        return output
+export async function execExportWin() {
+  return new Promise((resolve, reject) => {
+    exec(
+      'powershell "Get-ItemProperty HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName"',
+      (error, stdout, stderr) => {
+        if (error) {
+          console.error(error.message);
+          reject(error);
+          return;
+        } else if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          reject(new Error(`stderr: ${stderr}`));
+          return;
+        } else if (stdout) {
+          let progArr = stdout.split("\r").map((el) => el.trim()).filter((el) => el !== "");
+          resolve(progArr);
+        }
       }
-    }
-  );
+    );
+  });
 }
 
 export function execRemoveWin(command, programName) {

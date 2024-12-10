@@ -1,16 +1,21 @@
 import { exec } from "child_process";
 
-export function execExportLin() {
-    exec("dpkg --get-selections", (error, stdout, stderr) => {
-        if (error) {
-            console.error(error.message);
-            return;
-        } else if (stderr) {
-            console.error(`stderr: ${stderr}`);
-            return;
-        } else if (stdout) {
-            console.log(stdout);
-        }
+export async function execExportLin() {
+    return new Promise((resolve, reject) => {
+        exec("dpkg --get-selections", (error, stdout, stderr) => {
+            if (error) {
+                console.error(error.message);
+                reject(error);
+                return;
+            } else if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                reject(new Error(`stderr: ${stderr}`));
+                return;
+            } else if (stdout) {
+                let progArr = stdout.split("\r").map((el) => el.trim()).filter((el) => el !== "");
+                resolve(progArr);
+            }
+        });
     });
 }
 
