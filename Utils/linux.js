@@ -19,13 +19,24 @@ export async function execExportLin() {
     });
 }
 
-export function execRemoveLin(command, programName) {
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Error removing the program!`, error);
-            return;
-        } else {
-            console.log(`Uninstalled: ${programName}`);
-        }
+export function execRemoveLin(programName) {
+    let finalCommand = `sudo apt remove ${programName}`;
+    return new Promise((resolve, reject) => {
+        exec(finalCommand, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error removing the program!`, error);
+                reject(`Error removing the program!`, error)
+                return;
+            } 
+            if (stderr) {
+                console.log(`Error uninstalling program ${programName}`);
+                reject(stderr);
+                return
+            }
+            if (stdout) {
+                console.log(`Uninstall output: ${stdout}`);
+                resolve(`Uninstalled: ${programName}`);
+            }
+        });
     });
 }

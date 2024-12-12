@@ -22,14 +22,24 @@ export async function execExportWin() {
   });
 }
 
-export function execRemoveWin(command, programName) {
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error removing the program!`, error);
-      return;
-    } else {
-      console.log(`Uninstalled: ${programName}`);
-      console.log(stdout);
+export async function execRemoveWin(programName) {
+  let finalCommand = `wmic product where name='${programName}' call uninstall`;
+  return new Promise((resolve, reject) => {
+    exec(finalCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error removing the program!`, error);
+        reject(`Error removing the program!`, error)
+        return;
+    } 
+    if (stderr) {
+        console.log(`Error uninstalling program ${programName}`);
+        reject(stderr);
+        return
     }
+    if (stdout) {
+        console.log(`Uninstalled output: ${stdout}`);
+        resolve(`Uninstalled: ${programName}`);
+    }
+    });
   });
 }

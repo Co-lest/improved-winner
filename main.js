@@ -5,19 +5,20 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { WebSocketServer } from "ws";
 
-import { execExportWin, execRemoveWin} from "./utils/win32.js";
+import { execExportWin, execRemoveWin } from "./utils/win32.js";
 import { execExportMac, execRemoveMac } from "./utils/mac.js";
 import { execExportLin, execRemoveLin } from "./utils/linux.js";
 
 const port = process.env.PORT;
 var operatingSys;
+let programs;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const server = http.createServer(async (req, res) => {
   try {
-    console.log(`Incoming Request: ${req.method} ${req.url}`); 
+    console.log(`Incoming Request: ${req.method} ${req.url}`);
     // Log request details for easier debugging
 
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -44,7 +45,6 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200, { "Content-Type": contentType });
         res.end(content);
       } else if (req.url === "/favicon.ico") {
-
       } else {
         console.log("Serving static file:", req.url); // Log static file requests
         filePath = req.url.substring(1);
@@ -84,50 +84,49 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-const wss = new WebSocketServer( { server } );
-
+const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-  let programs;
   console.log(`A client connected`);
 
   ws.on("message", (message) => {
-    operatingSys = message.toString();
+    let messageReceived = JSON.parse(message);
+    let removeProg;
 
-    if (operatingSys === 'Win') {
-      (async () => {
-        try {
-          programs = await execExportWin();
-          console.log(programs);
-          ws.send(JSON.stringify(programs));
-        } catch (err) {
-          console.error(err);
-          return;
-        }
-      })();
-    } else if (operatingSys === 'Mac') {
-      (async () => {
-        try {
-          programs = await execExportMac();
-          console.log(programs);
-          ws.send(JSON.stringify(programs));
-        } catch (err) {
-          console.error(err);
-          return;
-        }
-      })();
-      ws.send(programs);
-    } else if (operatingSys === 'Linux') {
-      (async () => {
-        try {
-          programs = await execExportLin();
-          console.log(programs);
-          ws.send(JSON.stringify(programs));
-        } catch (err) {
-          console.error(err);
-          return;
-        }
-      })();
+    if (typeof messageReceived === "string") {
+      operatingSys = JSON.parse(message);
+    } else {
+      removeProg = JSON.parse(message);
+
+      let uninstallMessage;
+      if (operatingSys === "Win") {
+        console.log(operatingSys);
+        (async () => {
+          uninstallMessage = await execRemoveWin(removeProg.remove);
+          console.log(uninstallMessage);
+          await fetchProgramsWin(ws);
+        })();
+      } else if (operatingSys === "Mac") {
+        (async () => {
+          uninstallMessage = await execRemoveMac(removeProg.remove);
+          console.log(uninstallMessage);
+          await fetchProgramsMac(ws);
+        })();
+      } else if (operatingSys === "Linux") {
+        (async () => {
+          uninstallMessage = await execRemoveLin(removeProg.remove);
+          console.log(uninstallMessage);
+          await fetchProgramsLin(ws);
+        })();
+      }
+    }
+
+    if (operatingSys === "Win") {
+      fetchProgramsWin(ws);
+    } else if (operatingSys === "Mac") {
+      fetchProgramsMac(ws);
+    } else if (operatingSys === "Linux") {
+      fetchProgramsLin(ws);
     }
   });
 });
@@ -135,3 +134,44 @@ wss.on("connection", (ws) => {
 server.listen(port, () => {
   console.log(`Server listening on port: ${port}`);
 });
+
+async function fetchProgramsWin(ws) {
+  try {
+    programs = await execExportWin();
+    ws.send(JSON.stringify(programs));
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+}
+
+async function fetchProgramsMac(ws) {
+  try {
+    programs = await execExportMac();
+    ws.send(JSON.stringify(programs));
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+}
+
+async function fetchProgramsLin(ws) {
+  try {
+    programs = await execExportLin();
+    ws.send(JSON.stringify(programs));
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+}
+
+// (async () => {
+//   try {
+//     programs = await execExportWin();
+//     console.log(programs);
+//     ws.send(JSON.stringify(programs));
+//   } catch (err) {
+//     console.error(err);
+//     return;
+//   }
+// })();

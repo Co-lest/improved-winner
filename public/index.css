@@ -1,3 +1,17 @@
-#uninstall-container {
-    display: none;
-} 
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+#tableData {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+#tableData:hover{
+    cursor: pointer;
+}
